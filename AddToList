@@ -1,0 +1,51 @@
+{!REQUIRESCRIPT("/soap/ajax/25.0/connection.js")}
+var url = parent.location.href;
+var records = {!GETRECORDIDS($ObjectType.Alumni__c)};
+var createRecords = [];
+ 
+if (records[0] == null) {
+    alert("Please select at least one record to update.");
+} 
+else 
+var dt = new Date()
+var month = dt.getMonth()+1;
+var day = dt.getDate();
+var hours = dt.getHours();
+var mins = dt.getMinutes();
+var newList = new sforce.SObject("Lists__c");
+ 
+newList.Name = "SYNC:" + month + "|" + day + "|" + hours + "|" + mins;
+ 
+var saveResult = sforce.connection.create([newList]);
+ 
+ 
+{
+ 
+   for (var a=0; a < records.length; a++) {
+     var Create_List = new sforce.SObject("List_Detail__c");
+     Create_List.Alumni__c = records[a];
+     Create_List.List__c = saveResult[0].id;
+     createRecords.push(Create_List);
+   }
+   //This line does the actual update
+   result = sforce.connection.create(createRecords);
+       
+   //Now check if there are any errors
+   var hasErrors = false;
+   var errorReport = "The following Alumni could not be added:\n";
+   for (var j = 0; j < result.length; j++) {
+          if (!result[j].getBoolean("success")) {
+            hasErrors = true;
+            errorReport += ("AlumniId: " + createRecords[j].Id + ", error: " + result[j].errors.message + "\n");
+            if (j == 10 && j < result.length) {
+              errorReport += ("Maximum errors to display.  Will show first 10 out of " + "result.length\n");
+              break;
+            }
+          }
+        }
+ 
+   if (hasErrors) {
+     alert(errorReport);
+   }
+   window.location = saveResult[0].id;
+}
